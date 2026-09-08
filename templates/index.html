@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Scheduling Visualizer & Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>CPU Scheduling Visualizer</h1>
+
+        <!-- Mode Navigation -->
+        <div class="mode-switch">
+            <button id="btnModule1" class="active" onclick="switchModule(1)">Module 1: Visualization</button>
+            <button id="btnModule2" onclick="switchModule(2)">Module 2: Comparative Analysis</button>
+        </div>
+
+        <!-- Input Table -->
+        <h3>Process Inputs</h3>
+        <table id="processTable">
+            <thead>
+                <tr>
+                    <th>Process ID</th>
+                    <th>Arrival Time</th>
+                    <th>Burst Time</th>
+                    <th>Priority (Lower = Higher)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>P1</td>
+                    <td><input type="number" class="arrival" value="0" min="0"></td>
+                    <td><input type="number" class="burst" value="5" min="1"></td>
+                    <td><input type="number" class="priority" value="1" min="0"></td>
+                    <td><button class="remove-btn" onclick="removeRow(this)">Delete</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button onclick="addRow()" class="add-btn">+ Add Process</button>
+
+        <!-- Module 1 Section -->
+        <div id="module1" class="module-section">
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="algorithm">Select Algorithm:</label>
+                <select id="algorithm">
+                    <option value="FCFS">First Come First Serve (FCFS)</option>
+                    <option value="SJF">Shortest Job First (SJF Non-Preemptive)</option>
+                    <option value="Priority">Priority Scheduling (Non-Preemptive)</option>
+                </select>
+                <button onclick="runSimulation()" class="run-btn">Run Simulation</button>
+            </div>
+
+            <div id="results1" class="results-section" style="display:none;">
+                <h2>Gantt Chart</h2>
+                <div id="ganttChart" class="gantt-chart"></div>
+
+                <h2>Process Result Table</h2>
+                <table id="resultTable">
+                    <thead>
+                        <tr>
+                            <th>Process ID</th>
+                            <th>Arrival Time</th>
+                            <th>Burst Time</th>
+                            <th>Completion Time (CT)</th>
+                            <th>Turnaround Time (TAT)</th>
+                            <th>Waiting Time (WT)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <h2>Overall Metrics</h2>
+                <p>Average Waiting Time: <b><span id="avgWaiting"></span></b></p>
+                <p>Average Turnaround Time: <b><span id="avgTurnaround"></span></b></p>
+                <p>Total CPU Idle Time: <b><span id="totalIdle"></span></b></p>
+            </div>
+        </div>
+
+        <!-- Module 2 Section -->
+        <div id="module2" class="module-section" style="display:none;">
+            <h3>Select Algorithms to Compare</h3>
+            <div class="checkbox-group">
+                <label><input type="checkbox" value="FCFS" checked> FCFS</label>
+                <label><input type="checkbox" value="SJF" checked> SJF</label>
+                <label><input type="checkbox" value="Priority" checked> Priority</label>
+            </div>
+            <button onclick="runComparison()" class="run-btn" style="margin-top: 15px;">Compare Algorithms</button>
+
+            <div id="results2" class="results-section" style="display:none; margin-top: 20px;">
+                <h2>Comparative Gantt Charts</h2>
+                <div id="comparisonGantt"></div>
+
+                <h2>Performance Comparison Summary</h2>
+                <table id="comparisonTable">
+                    <thead>
+                        <tr>
+                            <th>Algorithm</th>
+                            <th>Avg Waiting Time</th>
+                            <th>Avg Turnaround Time</th>
+                            <th>Total Idle Time</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
