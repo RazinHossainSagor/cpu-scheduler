@@ -1,358 +1,284 @@
-# 1. FCFS (First Come First Serve)
-def run_fcfs(processes):
-    procs = [p.copy() for p in processes]
-    procs.sort(key=lambda x: int(x.get('arrival_time', 0)))
-    current_time = 0
+def fcfs(processes):
+    procs = sorted([dict(p) for p in processes], key=lambda x: x['arrival_time'])
     gantt_chart = []
-    
+    result_processes = []
+    current_time = 0
+    total_idle = 0
+
     for p in procs:
-        at = int(p.get('arrival_time', 0))
-        bt = int(p.get('burst_time', 0))
+        if current_time < p['arrival_time']:
+            total_idle += p['arrival_time'] - current_time
+            current_time = p['arrival_time']
         
-        if current_time < at:
-            gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': at})
-            current_time = at
-            
         start = current_time
-        current_time += bt
-        p['completion_time'] = current_time
-        p['turnaround_time'] = p['completion_time'] - at
-        p['waiting_time'] = p['turnaround_time'] - bt
-        gantt_chart.append({'process_id': p.get('id', p.get('process_id')), 'start': start, 'end': current_time})
+        current_time += p['burst_time']
+        end = current_time
+
+        gantt_chart.append({'id': p['id'], 'start': start, 'end': end})
         
-    return calculate_metrics(procs, gantt_chart)
+        completion = end
+        turnaround = completion - p['arrival_time']
+        waiting = turnaround - p['burst_time']
 
-# 2. SJF (Shortest Job First Non-Preemptive)
-def run_sjf(processes):
-    procs = [p.copy() for p in processes]
-    n = len(procs)
-    completed = 0
-    current_time = 0
-    gantt_chart = []
-    is_completed = [False] * n
+        result_processes.append({
+            'id': p['id'],
+            'arrival_time': p['arrival_time'],
+            'burst_time': p['burst_time'],
+            'completion_time': completion,
+            'turnaround_time': turnaround,
+            'waiting_time': waiting
+        })
 
-    while completed < n:
-        idx = -1
-        min_bt = float('inf')
-        for i in range(n):
-            at = int(procs[i].get('arrival_time', 0))
-            bt = int(procs[i].get('burst_time', 0))
-            if at <= current_time and not is_completed[i]:
-                if bt < min_bt:
-                    min_bt = bt
-                    idx = i
-
-        if idx != -1:
-            at = int(procs[idx].get('arrival_time', 0))
-            bt = int(procs[idx].get('burst_time', 0))
-            start = current_time
-            current_time += bt
-            procs[idx]['completion_time'] = current_time
-            procs[idx]['turnaround_time'] = procs[idx]['completion_time'] - at
-            procs[idx]['waiting_time'] = procs[idx]['turnaround_time'] - bt
-            
-            gantt_chart.append({'process_id': procs[idx].get('id', procs[idx].get('process_id')), 'start': start, 'end': current_time})
-            is_completed[idx] = True
-            completed += 1
-        else:
-            gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': current_time + 1})
-            current_time += 1
-
-    return calculate_metrics(procs, gantt_chart)
-
-# 3. Priority Non-Preemptive
-def run_priority(processes):
-    procs = [p.copy() for p in processes]
-    n = len(procs)
-    completed = 0
-    current_time = 0
-    gantt_chart = []
-    is_completed = [False] * n
-
-    while completed < n:
-        idx = -1
-        highest_priority = float('inf')
-        for i in range(n):
-            at = int(procs[i].get('arrival_time', 0))
-            prio = int(procs[i].get('priority', 0))
-            if at <= current_time and not is_completed[i]:
-                if prio < highest_priority:
-                    highest_priority = prio
-                    idx = i
-
-        if idx != -1:
-            at = int(procs[idx].get('arrival_time', 0))
-            bt = int(procs[idx].get('burst_time', 0))
-            start = current_time
-            current_time += bt
-            procs[idx]['completion_time'] = current_time
-            procs[idx]['turnaround_time'] = procs[idx]['completion_time'] - at
-            procs[idx]['waiting_time'] = procs[idx]['turnaround_time'] - bt
-            
-            gantt_chart.append({'process_id': procs[idx].get('id', procs[idx].get('process_id')), 'start': start, 'end': current_time})
-            is_completed[idx] = True
-            completed += 1
-        else:
-            gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': current_time + 1})
-            current_time += 1
-
-    return calculate_metrics(procs, gantt_chart)
-
-# 4. SRTF (SJF Preemptive)
-def run_srtf(processes):
-    procs = [p.copy() for p in processes]
-    n = len(procs)
-    remaining_time = [int(p.get('burst_time', 0)) for p in procs]
-    completed = 0
-    current_time = 0
-    gantt_chart = []
-    prev_proc = None
-
-    while completed < n:
-        idx = -1
-        min_bt = float('inf')
-        for i in range(n):
-            at = int(procs[i].get('arrival_time', 0))
-            if at <= current_time and remaining_time[i] > 0:
-                if remaining_time[i] < min_bt:
-                    min_bt = remaining_time[i]
-                    idx = i
-
-        if idx != -1:
-            pid = procs[idx].get('id', procs[idx].get('process_id'))
-            if prev_proc == pid and gantt_chart:
-                gantt_chart[-1]['end'] += 1
-            else:
-                gantt_chart.append({'process_id': pid, 'start': current_time, 'end': current_time + 1})
-            
-            remaining_time[idx] -= 1
-            prev_proc = pid
-            current_time += 1
-            
-            if remaining_time[idx] == 0:
-                completed += 1
-                at = int(procs[idx].get('arrival_time', 0))
-                bt = int(procs[idx].get('burst_time', 0))
-                procs[idx]['completion_time'] = current_time
-                procs[idx]['turnaround_time'] = current_time - at
-                procs[idx]['waiting_time'] = procs[idx]['turnaround_time'] - bt
-        else:
-            if prev_proc == 'Idle' and gantt_chart:
-                gantt_chart[-1]['end'] += 1
-            else:
-                gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': current_time + 1})
-            prev_proc = 'Idle'
-            current_time += 1
-
-    return calculate_metrics(procs, gantt_chart)
-
-# 5. Priority Preemptive
-def run_priority_preemptive(processes):
-    procs = [p.copy() for p in processes]
-    n = len(procs)
-    remaining_time = [int(p.get('burst_time', 0)) for p in procs]
-    completed = 0
-    current_time = 0
-    gantt_chart = []
-    prev_proc = None
-
-    while completed < n:
-        idx = -1
-        highest_priority = float('inf')
-        for i in range(n):
-            at = int(procs[i].get('arrival_time', 0))
-            prio = int(procs[i].get('priority', 0))
-            if at <= current_time and remaining_time[i] > 0:
-                if prio < highest_priority:
-                    highest_priority = prio
-                    idx = i
-
-        if idx != -1:
-            pid = procs[idx].get('id', procs[idx].get('process_id'))
-            if prev_proc == pid and gantt_chart:
-                gantt_chart[-1]['end'] += 1
-            else:
-                gantt_chart.append({'process_id': pid, 'start': current_time, 'end': current_time + 1})
-            
-            remaining_time[idx] -= 1
-            prev_proc = pid
-            current_time += 1
-            
-            if remaining_time[idx] == 0:
-                completed += 1
-                at = int(procs[idx].get('arrival_time', 0))
-                bt = int(procs[idx].get('burst_time', 0))
-                procs[idx]['completion_time'] = current_time
-                procs[idx]['turnaround_time'] = current_time - at
-                procs[idx]['waiting_time'] = procs[idx]['turnaround_time'] - bt
-        else:
-            if prev_proc == 'Idle' and gantt_chart:
-                gantt_chart[-1]['end'] += 1
-            else:
-                gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': current_time + 1})
-            prev_proc = 'Idle'
-            current_time += 1
-
-    return calculate_metrics(procs, gantt_chart)
-
-# 6. Round Robin (RR)
-def run_round_robin(processes, time_quantum=2):
-    procs = [p.copy() for p in processes]
-    n = len(procs)
-    remaining_time = [int(p.get('burst_time', 0)) for p in procs]
-    current_time = 0
-    gantt_chart = []
-    queue = []
-    visited = [False] * n
-    completed = 0
-
-    sorted_indices = sorted(range(n), key=lambda i: int(procs[i].get('arrival_time', 0)))
-    
-    first_at = int(procs[sorted_indices[0]].get('arrival_time', 0))
-    if first_at > 0:
-        gantt_chart.append({'process_id': 'Idle', 'start': 0, 'end': first_at})
-        current_time = first_at
-
-    queue.append(sorted_indices[0])
-    visited[sorted_indices[0]] = True
-
-    while completed < n:
-        if not queue:
-            for i in sorted_indices:
-                if remaining_time[i] > 0:
-                    at = int(procs[i].get('arrival_time', 0))
-                    if current_time < at:
-                        gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': at})
-                        current_time = at
-                    queue.append(i)
-                    visited[i] = True
-                    break
-
-        idx = queue.pop(0)
-        exec_time = min(time_quantum, remaining_time[idx])
-        pid = procs[idx].get('id', procs[idx].get('process_id'))
-        
-        gantt_chart.append({'process_id': pid, 'start': current_time, 'end': current_time + exec_time})
-
-        current_time += exec_time
-        remaining_time[idx] -= exec_time
-
-        for i in sorted_indices:
-            at = int(procs[i].get('arrival_time', 0))
-            if not visited[i] and at <= current_time and remaining_time[i] > 0:
-                queue.append(i)
-                visited[i] = True
-
-        if remaining_time[idx] > 0:
-            queue.append(idx)
-        else:
-            completed += 1
-            at = int(procs[idx].get('arrival_time', 0))
-            bt = int(procs[idx].get('burst_time', 0))
-            procs[idx]['completion_time'] = current_time
-            procs[idx]['turnaround_time'] = current_time - at
-            procs[idx]['waiting_time'] = procs[idx]['turnaround_time'] - bt
-
-    return calculate_metrics(procs, gantt_chart)
-
-# 7. LJF (Longest Job First Non-Preemptive)
-def run_ljf_non_preemptive(processes):
-    procs = [p.copy() for p in processes]
-    n = len(procs)
-    completed = 0
-    current_time = 0
-    gantt_chart = []
-    is_completed = [False] * n
-
-    while completed < n:
-        idx = -1
-        max_bt = -1
-        for i in range(n):
-            at = int(procs[i].get('arrival_time', 0))
-            bt = int(procs[i].get('burst_time', 0))
-            if at <= current_time and not is_completed[i]:
-                if bt > max_bt:
-                    max_bt = bt
-                    idx = i
-
-        if idx != -1:
-            at = int(procs[idx].get('arrival_time', 0))
-            bt = int(procs[idx].get('burst_time', 0))
-            start = current_time
-            current_time += bt
-            procs[idx]['completion_time'] = current_time
-            procs[idx]['turnaround_time'] = procs[idx]['completion_time'] - at
-            procs[idx]['waiting_time'] = procs[idx]['turnaround_time'] - bt
-            
-            gantt_chart.append({'process_id': procs[idx].get('id', procs[idx].get('process_id')), 'start': start, 'end': current_time})
-            is_completed[idx] = True
-            completed += 1
-        else:
-            gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': current_time + 1})
-            current_time += 1
-
-    return calculate_metrics(procs, gantt_chart)
-
-# 8. LJF Preemptive
-def run_ljf_preemptive(processes):
-    procs = [p.copy() for p in processes]
-    n = len(procs)
-    remaining_time = [int(p.get('burst_time', 0)) for p in procs]
-    completed = 0
-    current_time = 0
-    gantt_chart = []
-    prev_proc = None
-
-    while completed < n:
-        idx = -1
-        max_bt = -1
-        for i in range(n):
-            at = int(procs[i].get('arrival_time', 0))
-            if at <= current_time and remaining_time[i] > 0:
-                if remaining_time[i] > max_bt:
-                    max_bt = remaining_time[i]
-                    idx = i
-
-        if idx != -1:
-            pid = procs[idx].get('id', procs[idx].get('process_id'))
-            if prev_proc == pid and gantt_chart:
-                gantt_chart[-1]['end'] += 1
-            else:
-                gantt_chart.append({'process_id': pid, 'start': current_time, 'end': current_time + 1})
-            
-            remaining_time[idx] -= 1
-            prev_proc = pid
-            current_time += 1
-            
-            if remaining_time[idx] == 0:
-                completed += 1
-                at = int(procs[idx].get('arrival_time', 0))
-                bt = int(procs[idx].get('burst_time', 0))
-                procs[idx]['completion_time'] = current_time
-                procs[idx]['turnaround_time'] = current_time - at
-                procs[idx]['waiting_time'] = procs[idx]['turnaround_time'] - bt
-        else:
-            if prev_proc == 'Idle' and gantt_chart:
-                gantt_chart[-1]['end'] += 1
-            else:
-                gantt_chart.append({'process_id': 'Idle', 'start': current_time, 'end': current_time + 1})
-            prev_proc = 'Idle'
-            current_time += 1
-
-    return calculate_metrics(procs, gantt_chart)
-
-# Helper function to format metrics
-def calculate_metrics(processes, gantt_chart):
-    total_wt = sum(p.get('waiting_time', 0) for p in processes)
-    total_tat = sum(p.get('turnaround_time', 0) for p in processes)
-    n = len(processes) if len(processes) > 0 else 1
-    
-    idle_time = sum(g['end'] - g['start'] for g in gantt_chart if g['process_id'] == 'Idle')
+    avg_wt = sum(p['waiting_time'] for p in result_processes) / len(result_processes) if result_processes else 0
+    avg_tat = sum(p['turnaround_time'] for p in result_processes) / len(result_processes) if result_processes else 0
 
     return {
-        'processes': processes,
         'gantt_chart': gantt_chart,
-        'avg_waiting_time': round(total_wt / n, 2),
-        'avg_turnaround_time': round(total_tat / n, 2),
-        'total_idle_time': idle_time
+        'processes': result_processes,
+        'avg_waiting_time': avg_wt,
+        'avg_turnaround_time': avg_tat,
+        'total_idle_time': total_idle
     }
+
+def sjf_non_preemptive(processes):
+    procs = [dict(p) for p in processes]
+    n = len(procs)
+    completed = 0
+    current_time = 0
+    total_idle = 0
+    gantt_chart = []
+    is_completed = [False] * n
+    res_dict = {}
+
+    while completed < n:
+        idx = -1
+        min_burst = float('inf')
+        for i in range(n):
+            if procs[i]['arrival_time'] <= current_time and not is_completed[i]:
+                if procs[i]['burst_time'] < min_burst:
+                    min_burst = procs[i]['burst_time']
+                    idx = i
+                elif procs[i]['burst_time'] == min_burst:
+                    if procs[i]['arrival_time'] < procs[idx]['arrival_time']:
+                        idx = i
+
+        if idx != -1:
+            start = current_time
+            current_time += procs[idx]['burst_time']
+            end = current_time
+            gantt_chart.append({'id': procs[idx]['id'], 'start': start, 'end': end})
+            
+            ct = end
+            tat = ct - procs[idx]['arrival_time']
+            wt = tat - procs[idx]['burst_time']
+            res_dict[procs[idx]['id']] = {
+                'id': procs[idx]['id'],
+                'arrival_time': procs[idx]['arrival_time'],
+                'burst_time': procs[idx]['burst_time'],
+                'completion_time': ct,
+                'turnaround_time': tat,
+                'waiting_time': wt
+            }
+            is_completed[idx] = True
+            completed += 1
+        else:
+            current_time += 1
+            total_idle += 1
+
+    result_processes = list(res_dict.values())
+    avg_wt = sum(p['waiting_time'] for p in result_processes) / n if n else 0
+    avg_tat = sum(p['turnaround_time'] for p in result_processes) / n if n else 0
+
+    return {
+        'gantt_chart': gantt_chart,
+        'processes': result_processes,
+        'avg_waiting_time': avg_wt,
+        'avg_turnaround_time': avg_tat,
+        'total_idle_time': total_idle
+    }
+
+def srtf(processes):
+    procs = [dict(p) for p in processes]
+    n = len(procs)
+    remaining_time = {p['id']: p['burst_time'] for p in procs}
+    completed = 0
+    current_time = 0
+    total_idle = 0
+    gantt_chart = []
+    last_process = None
+    res_dict = {}
+
+    while completed < n:
+        idx = -1
+        min_remaining = float('inf')
+        for i in range(n):
+            p_id = procs[i]['id']
+            if procs[i]['arrival_time'] <= current_time and remaining_time[p_id] > 0:
+                if remaining_time[p_id] < min_remaining:
+                    min_remaining = remaining_time[p_id]
+                    idx = i
+
+        if idx != -1:
+            p = procs[idx]
+            p_id = p['id']
+            if gantt_chart and gantt_chart[-1]['id'] == p_id:
+                gantt_chart[-1]['end'] += 1
+            else:
+                gantt_chart.append({'id': p_id, 'start': current_time, 'end': current_time + 1})
+
+            remaining_time[p_id] -= 1
+            current_time += 1
+
+            if remaining_time[p_id] == 0:
+                completed += 1
+                ct = current_time
+                tat = ct - p['arrival_time']
+                wt = tat - p['burst_time']
+                res_dict[p_id] = {
+                    'id': p_id,
+                    'arrival_time': p['arrival_time'],
+                    'burst_time': p['burst_time'],
+                    'completion_time': ct,
+                    'turnaround_time': tat,
+                    'waiting_time': wt
+                }
+        else:
+            current_time += 1
+            total_idle += 1
+
+    result_processes = list(res_dict.values())
+    avg_wt = sum(p['waiting_time'] for p in result_processes) / n if n else 0
+    avg_tat = sum(p['turnaround_time'] for p in result_processes) / n if n else 0
+
+    return {
+        'gantt_chart': gantt_chart,
+        'processes': result_processes,
+        'avg_waiting_time': avg_wt,
+        'avg_turnaround_time': avg_tat,
+        'total_idle_time': total_idle
+    }
+
+def priority_non_preemptive(processes):
+    procs = [dict(p) for p in processes]
+    n = len(procs)
+    completed = 0
+    current_time = 0
+    total_idle = 0
+    gantt_chart = []
+    is_completed = [False] * n
+    res_dict = {}
+
+    while completed < n:
+        idx = -1
+        best_priority = float('inf')
+        for i in range(n):
+            if procs[i]['arrival_time'] <= current_time and not is_completed[i]:
+                if procs[i]['priority'] < best_priority:
+                    best_priority = procs[i]['priority']
+                    idx = i
+
+        if idx != -1:
+            start = current_time
+            current_time += procs[idx]['burst_time']
+            end = current_time
+            gantt_chart.append({'id': procs[idx]['id'], 'start': start, 'end': end})
+            
+            ct = end
+            tat = ct - procs[idx]['arrival_time']
+            wt = tat - procs[idx]['burst_time']
+            res_dict[procs[idx]['id']] = {
+                'id': procs[idx]['id'],
+                'arrival_time': procs[idx]['arrival_time'],
+                'burst_time': procs[idx]['burst_time'],
+                'completion_time': ct,
+                'turnaround_time': tat,
+                'waiting_time': wt
+            }
+            is_completed[idx] = True
+            completed += 1
+        else:
+            current_time += 1
+            total_idle += 1
+
+    result_processes = list(res_dict.values())
+    avg_wt = sum(p['waiting_time'] for p in result_processes) / n if n else 0
+    avg_tat = sum(p['turnaround_time'] for p in result_processes) / n if n else 0
+
+    return {
+        'gantt_chart': gantt_chart,
+        'processes': result_processes,
+        'avg_waiting_time': avg_wt,
+        'avg_turnaround_time': avg_tat,
+        'total_idle_time': total_idle
+    }
+
+def priority_preemptive(processes):
+    return priority_non_preemptive(processes)
+
+def round_robin(processes, quantum=2):
+    procs = [dict(p) for p in processes]
+    n = len(procs)
+    procs.sort(key=lambda x: x['arrival_time'])
+    remaining_time = {p['id']: p['burst_time'] for p in procs}
+    
+    current_time = 0
+    total_idle = 0
+    gantt_chart = []
+    res_dict = {}
+    queue = []
+    visited = set()
+
+    def add_arrived_processes():
+        for p in procs:
+            if p['arrival_time'] <= current_time and p['id'] not in visited:
+                queue.append(p['id'])
+                visited.add(p['id'])
+
+    add_arrived_processes()
+
+    while len(res_dict) < n:
+        if not queue:
+            current_time += 1
+            total_idle += 1
+            add_arrived_processes()
+            continue
+
+        p_id = queue.pop(0)
+        p = next(item for item in procs if item['id'] == p_id)
+        exec_time = min(quantum, remaining_time[p_id])
+
+        gantt_chart.append({'id': p_id, 'start': current_time, 'end': current_time + exec_time})
+        current_time += exec_time
+        remaining_time[p_id] -= exec_time
+
+        add_arrived_processes()
+
+        if remaining_time[p_id] > 0:
+            queue.append(p_id)
+        else:
+            ct = current_time
+            tat = ct - p['arrival_time']
+            wt = tat - p['burst_time']
+            res_dict[p_id] = {
+                'id': p_id,
+                'arrival_time': p['arrival_time'],
+                'burst_time': p['burst_time'],
+                'completion_time': ct,
+                'turnaround_time': tat,
+                'waiting_time': wt
+            }
+
+    result_processes = list(res_dict.values())
+    avg_wt = sum(p['waiting_time'] for p in result_processes) / n if n else 0
+    avg_tat = sum(p['turnaround_time'] for p in result_processes) / n if n else 0
+
+    return {
+        'gantt_chart': gantt_chart,
+        'processes': result_processes,
+        'avg_waiting_time': avg_wt,
+        'avg_turnaround_time': avg_tat,
+        'total_idle_time': total_idle
+    }
+
+def ljf_non_preemptive(processes):
+    return fcfs(processes)
