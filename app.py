@@ -1,56 +1,90 @@
 from flask import Flask, render_template, request, jsonify
 from scheduler import (
-    run_fcfs, run_sjf, run_priority, 
-    run_srtf, run_priority_preemptive, 
-    run_round_robin, run_ljf_non_preemptive, run_ljf_preemptive
+    fcfs, sjf_non_preemptive, srtf, 
+    priority_non_preemptive, priority_preemptive, 
+    round_robin, ljf_non_preemptive
 )
 
 app = Flask(__name__)
+
+def parse_processes(data):
+    processes = []
+    for p in data:
+        processes.append({
+            'id': str(p.get('id', '')),
+            'arrival_time': int(p.get('arrival', p.get('arrival_time', 0))),
+            'burst_time': int(p.get('burst', p.get('burst_time', 1))),
+            'priority': int(p.get('priority', 0))
+        })
+    return processes
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-def execute_algorithm(algo, processes):
-    if algo == 'FCFS':
-        return run_fcfs(processes)
-    elif algo == 'SJF':
-        return run_sjf(processes)
-    elif algo == 'Priority':
-        return run_priority(processes)
-    elif algo in ['SRTF', 'srtf']:
-        return run_srtf(processes)
-    elif algo in ['Priority_Preemptive', 'priority_preemptive']:
-        return run_priority_preemptive(processes)
-    elif algo in ['RR', 'rr', 'Round_Robin']:
-        return run_round_robin(processes)
-    elif algo in ['LJF', 'ljf_non_preemptive']:
-        return run_ljf_non_preemptive(processes)
-    elif algo in ['LRTF', 'ljf_preemptive']:
-        return run_ljf_preemptive(processes)
-    else:
-        return run_fcfs(processes)
-
-@app.route('/api/simulate', methods=['POST'])
+@app.route('/simulate', methods=['POST'])
 def simulate():
-    data = request.json
-    algorithm = data.get('algorithm')
-    processes = data.get('processes', [])
+    try:
+        req_data = request.get_json()
+        algo = req_data.get('algorithm')
+        raw_processes = req_data.get('processes', [])
+        processes = parse_processes(raw_processes)
 
-    result = execute_algorithm(algorithm, processes)
-    return jsonify(result)
+        if algo == 'FCFS':
+            result = fcfs(processes)
+        elif algo == 'SJF':
+            result = sjf_non_preemptive(processes)
+        elif algo == 'SRTF':
+            result = srtf(processes)
+        elif algo == 'Priority':
+            result = priority_non_preemptive(processes)
+        elif algo == 'Priority_Preemptive':
+            result = priority_preemptive(processes)
+        elif algo == 'RR':
+            time_quantum = int(req_data.get('time_quantum', 2))
+            result = round_robin(processes, time_quantum)
+        elif algo == 'LJF':
+            result = ljf_non_preemptive(processes)
+        else:
+            return jsonify({'error': 'Invalid Algorithm'}), 400
 
-@app.route('/api/compare', methods=['POST'])
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/compare', methods=['POST'])
 def compare():
-    data = request.json
-    algorithms = data.get('algorithms', [])
-    processes = data.get('processes', [])
+    try:
+        req_data = request.get_json()
+        algorithms = req_data.get('algorithms', [])
+        raw_processes = req_data.get('processes', [])
+        processes = parse_processes(raw_processes)
 
-    results = {}
-    for algo in algorithms:
-        results[algo] = execute_algorithm(algo, processes)
+        comparison_results = []
+        for algo in algorithms:
+            res = None
+            if algo == 'FCFS':
+                res = fcfs(processes)
+            elif algo == 'SJF':
+                res = sjf_non_preemptive(processes)
+            elif algo == 'SRTF':
+                res = srtf(processes)
+            elif algo == 'Priority':
+                res = priority_non_preemptive(processes)
+            elif algo == 'Priority_Preemptive':
+                res = priority_preemptive(processes)
+            elif algo == 'RR':
+                res = round_robin(processes, 2)
+            elif algo == 'LJF':
+                res = ljf_non_preemptive(processes)
 
-    return jsonify(results)
+            if res:
+                res['algorithm'] = algo
+                comparison_results.append(res)
+
+        return jsonify(comparison_results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)

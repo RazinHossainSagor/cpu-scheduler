@@ -48,11 +48,13 @@ function runSimulation() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ algorithm, processes })
     })
-    .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+
         document.getElementById('results1').style.display = 'block';
 
         const ganttChart = document.getElementById('ganttChart');
@@ -72,18 +74,18 @@ function runSimulation() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${p.id}</td>
-                <td>${p.arrival ?? p.at ?? 0}</td>
-                <td>${p.burst ?? p.bt ?? 0}</td>
-                <td>${p.ct ?? p.completion ?? 0}</td>
-                <td>${p.tat ?? p.turnaround ?? 0}</td>
-                <td>${p.wt ?? p.waiting ?? 0}</td>
+                <td>${p.arrival_time ?? p.arrival ?? 0}</td>
+                <td>${p.burst_time ?? p.burst ?? 0}</td>
+                <td>${p.completion_time ?? p.ct ?? 0}</td>
+                <td>${p.turnaround_time ?? p.tat ?? 0}</td>
+                <td>${p.waiting_time ?? p.wt ?? 0}</td>
             `;
             tbody.appendChild(tr);
         });
 
-        const avgWT = data.avg_wt ?? data.avg_waiting_time ?? data.avg_waiting ?? 0;
-        const avgTAT = data.avg_tat ?? data.avg_turnaround_time ?? data.avg_turnaround ?? 0;
-        const totalIdle = data.total_idle ?? data.total_idle_time ?? data.idle_time ?? 0;
+        const avgWT = data.avg_waiting_time ?? data.avg_wt ?? 0;
+        const avgTAT = data.avg_turnaround_time ?? data.avg_tat ?? 0;
+        const totalIdle = data.total_idle_time ?? data.total_idle ?? 0;
 
         document.getElementById('avgWaiting').innerText = Number(avgWT).toFixed(2);
         document.getElementById('avgTurnaround').innerText = Number(avgTAT).toFixed(2);
@@ -91,7 +93,7 @@ function runSimulation() {
     })
     .catch(err => {
         console.error('Simulation error:', err);
-        alert('Simulation execution failed. Please check input values or refresh.');
+        alert('Server connection error.');
     });
 }
 
@@ -112,6 +114,11 @@ function runComparison() {
     })
     .then(res => res.json())
     .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+
         document.getElementById('results2').style.display = 'block';
 
         const ganttContainer = document.getElementById('comparisonGantt');
@@ -136,9 +143,9 @@ function runComparison() {
             });
             ganttContainer.appendChild(ganttDiv);
 
-            const avgWT = res.avg_wt ?? res.avg_waiting_time ?? res.avg_waiting ?? 0;
-            const avgTAT = res.avg_tat ?? res.avg_turnaround_time ?? res.avg_turnaround ?? 0;
-            const totalIdle = res.total_idle ?? res.total_idle_time ?? res.idle_time ?? 0;
+            const avgWT = res.avg_waiting_time ?? res.avg_wt ?? 0;
+            const avgTAT = res.avg_turnaround_time ?? res.avg_tat ?? 0;
+            const totalIdle = res.total_idle_time ?? res.total_idle ?? 0;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
