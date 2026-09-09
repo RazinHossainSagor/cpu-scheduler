@@ -1,9 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from scheduler import (
-    fcfs, sjf_non_preemptive, srtf, 
-    priority_non_preemptive, priority_preemptive, 
-    round_robin, ljf_non_preemptive
-)
+import scheduler
 
 app = Flask(__name__)
 
@@ -18,6 +14,9 @@ def parse_processes(data):
         })
     return processes
 
+def get_scheduler_func(func_name):
+    return getattr(scheduler, func_name, None)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -30,23 +29,36 @@ def simulate():
         raw_processes = req_data.get('processes', [])
         processes = parse_processes(raw_processes)
 
-        if algo == 'FCFS':
-            result = fcfs(processes)
-        elif algo == 'SJF':
-            result = sjf_non_preemptive(processes)
-        elif algo == 'SRTF':
-            result = srtf(processes)
-        elif algo == 'Priority':
-            result = priority_non_preemptive(processes)
-        elif algo == 'Priority_Preemptive':
-            result = priority_preemptive(processes)
-        elif algo == 'RR':
+        # scheduler.py-এর ফাংশন নামের সাথে মিলিয়ে নির্বাচন
+        algo_map = {
+            'FCFS': ['fcfs', 'first_come_first_serve', 'fcfs_scheduling'],
+            'SJF': ['sjf', 'sjf_non_preemptive', 'shortest_job_first'],
+            'SRTF': ['srtf', 'sjf_preemptive', 'shortest_remaining_time_first'],
+            'Priority': ['priority', 'priority_non_preemptive', 'priority_scheduling'],
+            'Priority_Preemptive': ['priority_preemptive', 'preemptive_priority'],
+            'RR': ['rr', 'round_robin', 'round_robin_scheduling'],
+            'LJF': ['ljf', 'ljf_non_preemptive', 'longest_job_first']
+        }
+
+        func_names = algo_map.get(algo, [])
+        target_func = None
+
+        for name in func_names:
+            target_func = get_scheduler_func(name)
+            if target_func:
+                break
+
+        if not target_func:
+            return jsonify({'error': f'Algorithm function for {algo} not found in scheduler.py'}), 400
+
+        if algo == 'RR':
             time_quantum = int(req_data.get('time_quantum', 2))
-            result = round_robin(processes, time_quantum)
-        elif algo == 'LJF':
-            result = ljf_non_preemptive(processes)
+            try:
+                result = target_func(processes, time_quantum)
+            except TypeError:
+                result = target_func(processes)
         else:
-            return jsonify({'error': 'Invalid Algorithm'}), 400
+            result = target_func(processes)
 
         return jsonify(result)
     except Exception as e:
@@ -60,27 +72,37 @@ def compare():
         raw_processes = req_data.get('processes', [])
         processes = parse_processes(raw_processes)
 
+        algo_map = {
+            'FCFS': ['fcfs', 'first_come_first_serve', 'fcfs_scheduling'],
+            'SJF': ['sjf', 'sjf_non_preemptive', 'shortest_job_first'],
+            'SRTF': ['srtf', 'sjf_preemptive', 'shortest_remaining_time_first'],
+            'Priority': ['priority', 'priority_non_preemptive', 'priority_scheduling'],
+            'Priority_Preemptive': ['priority_preemptive', 'preemptive_priority'],
+            'RR': ['rr', 'round_robin', 'round_robin_scheduling'],
+            'LJF': ['ljf', 'ljf_non_preemptive', 'longest_job_first']
+        }
+
         comparison_results = []
         for algo in algorithms:
-            res = None
-            if algo == 'FCFS':
-                res = fcfs(processes)
-            elif algo == 'SJF':
-                res = sjf_non_preemptive(processes)
-            elif algo == 'SRTF':
-                res = srtf(processes)
-            elif algo == 'Priority':
-                res = priority_non_preemptive(processes)
-            elif algo == 'Priority_Preemptive':
-                res = priority_preemptive(processes)
-            elif algo == 'RR':
-                res = round_robin(processes, 2)
-            elif algo == 'LJF':
-                res = ljf_non_preemptive(processes)
+            func_names = algo_map.get(algo, [])
+            target_func = None
+            for name in func_names:
+                target_func = get_scheduler_func(name)
+                if target_func:
+                    break
 
-            if res:
-                res['algorithm'] = algo
-                comparison_results.append(res)
+            if target_func:
+                if algo == 'RR':
+                    try:
+                        res = target_func(processes, 2)
+                    except TypeError:
+                        res = target_func(processes)
+                else:
+                    res = target_func(processes)
+
+                if res:
+                    res['algorithm'] = algo
+                    comparison_results.append(res)
 
         return jsonify(comparison_results)
     except Exception as e:
