@@ -30,7 +30,7 @@ function getProcessData() {
     const rows = document.querySelectorAll('#processTable tbody tr');
     const processes = [];
     rows.forEach(row => {
-        const id = row.cells[0].innerText;
+        const id = row.cells[0].innerText.trim();
         const arrival = parseInt(row.querySelector('.arrival').value) || 0;
         const burst = parseInt(row.querySelector('.burst').value) || 1;
         const priority = parseInt(row.querySelector('.priority').value) || 0;
@@ -48,41 +48,39 @@ function runSimulation() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ algorithm, processes })
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+    })
     .then(data => {
         document.getElementById('results1').style.display = 'block';
 
-        // 1. Render Gantt Chart
         const ganttChart = document.getElementById('ganttChart');
         ganttChart.innerHTML = '';
-        if (data.gantt_chart) {
-            data.gantt_chart.forEach(block => {
-                const div = document.createElement('div');
-                div.className = 'gantt-block';
-                div.innerText = `${block.id} (${block.start}-${block.end})`;
-                ganttChart.appendChild(div);
-            });
-        }
+        const chartData = data.gantt_chart || data.gantt || [];
+        chartData.forEach(block => {
+            const div = document.createElement('div');
+            div.className = 'gantt-block';
+            div.innerText = `${block.id} (${block.start}-${block.end})`;
+            ganttChart.appendChild(div);
+        });
 
-        // 2. Render Process Result Table
         const tbody = document.querySelector('#resultTable tbody');
         tbody.innerHTML = '';
-        if (data.processes) {
-            data.processes.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${p.id}</td>
-                    <td>${p.arrival}</td>
-                    <td>${p.burst}</td>
-                    <td>${p.ct ?? p.completion ?? '-'}</td>
-                    <td>${p.tat ?? p.turnaround ?? '-'}</td>
-                    <td>${p.wt ?? p.waiting ?? '-'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        const processData = data.processes || data.result_table || [];
+        processData.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.id}</td>
+                <td>${p.arrival ?? p.at ?? 0}</td>
+                <td>${p.burst ?? p.bt ?? 0}</td>
+                <td>${p.ct ?? p.completion ?? 0}</td>
+                <td>${p.tat ?? p.turnaround ?? 0}</td>
+                <td>${p.wt ?? p.waiting ?? 0}</td>
+            `;
+            tbody.appendChild(tr);
+        });
 
-        // 3. Render Overall Metrics (Handling various response key names)
         const avgWT = data.avg_wt ?? data.avg_waiting_time ?? data.avg_waiting ?? 0;
         const avgTAT = data.avg_tat ?? data.avg_turnaround_time ?? data.avg_turnaround ?? 0;
         const totalIdle = data.total_idle ?? data.total_idle_time ?? data.idle_time ?? 0;
@@ -91,7 +89,10 @@ function runSimulation() {
         document.getElementById('avgTurnaround').innerText = Number(avgTAT).toFixed(2);
         document.getElementById('totalIdle').innerText = totalIdle;
     })
-    .catch(err => console.error('Error running simulation:', err));
+    .catch(err => {
+        console.error('Simulation error:', err);
+        alert('Simulation execution failed. Please check input values or refresh.');
+    });
 }
 
 function runComparison() {
@@ -100,7 +101,7 @@ function runComparison() {
     const algorithms = Array.from(checkedBoxes).map(cb => cb.value);
 
     if (algorithms.length === 0) {
-        alert('Please select at least one algorithm for comparison.');
+        alert('Please select at least one algorithm.');
         return;
     }
 
@@ -120,24 +121,21 @@ function runComparison() {
         tbody.innerHTML = '';
 
         data.forEach(res => {
-            // Gantt Charts
             const algoHeader = document.createElement('h3');
             algoHeader.innerText = res.algorithm;
             ganttContainer.appendChild(algoHeader);
 
             const ganttDiv = document.createElement('div');
             ganttDiv.className = 'gantt-chart';
-            if (res.gantt_chart) {
-                res.gantt_chart.forEach(block => {
-                    const div = document.createElement('div');
-                    div.className = 'gantt-block';
-                    div.innerText = `${block.id} (${block.start}-${block.end})`;
-                    ganttDiv.appendChild(div);
-                });
-            }
+            const chartData = res.gantt_chart || res.gantt || [];
+            chartData.forEach(block => {
+                const div = document.createElement('div');
+                div.className = 'gantt-block';
+                div.innerText = `${block.id} (${block.start}-${block.end})`;
+                ganttDiv.appendChild(div);
+            });
             ganttContainer.appendChild(ganttDiv);
 
-            // Comparison Table
             const avgWT = res.avg_wt ?? res.avg_waiting_time ?? res.avg_waiting ?? 0;
             const avgTAT = res.avg_tat ?? res.avg_turnaround_time ?? res.avg_turnaround ?? 0;
             const totalIdle = res.total_idle ?? res.total_idle_time ?? res.idle_time ?? 0;
@@ -152,5 +150,5 @@ function runComparison() {
             tbody.appendChild(tr);
         });
     })
-    .catch(err => console.error('Error running comparison:', err));
+    .catch(err => console.error('Comparison error:', err));
 }
