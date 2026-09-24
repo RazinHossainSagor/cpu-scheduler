@@ -11,7 +11,6 @@ def parse_processes(data):
             'arrival_time': int(p.get('arrival', p.get('arrival_time', 0))),
             'burst_time': int(p.get('burst', p.get('burst_time', 1))),
             'priority': int(p.get('priority', 0)),
-            # JS safety compatibility
             'arrival': int(p.get('arrival', p.get('arrival_time', 0))),
             'burst': int(p.get('burst', p.get('burst_time', 1)))
         })
@@ -39,7 +38,8 @@ def simulate():
             'Priority': ['priority', 'priority_non_preemptive', 'priority_scheduling'],
             'Priority_Preemptive': ['priority_preemptive', 'preemptive_priority'],
             'RR': ['rr', 'round_robin', 'round_robin_scheduling'],
-            'LJF': ['ljf', 'ljf_non_preemptive', 'longest_job_first']
+            'LJF': ['ljf', 'ljf_non_preemptive', 'longest_job_first'],
+            'LRTF': ['lrtf', 'ljf_preemptive', 'longest_remaining_time_first']
         }
 
         func_names = algo_map.get(algo, [])
@@ -51,12 +51,11 @@ def simulate():
                 break
 
         if not target_func:
-            return jsonify({'error': f'Algorithm function for {algo} not found in scheduler.py'}), 400
+            return jsonify({'error': f'Algorithm function for {algo} not found'}), 400
 
         if algo == 'RR':
-            time_quantum = int(req_data.get('time_quantum', 2))
             try:
-                result = target_func(processes, time_quantum)
+                result = target_func(processes, 2)
             except TypeError:
                 result = target_func(processes)
         else:
@@ -81,7 +80,8 @@ def compare():
             'Priority': ['priority', 'priority_non_preemptive', 'priority_scheduling'],
             'Priority_Preemptive': ['priority_preemptive', 'preemptive_priority'],
             'RR': ['rr', 'round_robin', 'round_robin_scheduling'],
-            'LJF': ['ljf', 'ljf_non_preemptive', 'longest_job_first']
+            'LJF': ['ljf', 'ljf_non_preemptive', 'longest_job_first'],
+            'LRTF': ['lrtf', 'ljf_preemptive', 'longest_remaining_time_first']
         }
 
         comparison_results = []
@@ -106,7 +106,6 @@ def compare():
                     res['algorithm'] = algo
                     comparison_results.append(res)
 
-        # Response wrapper added for script.js compatibility
         return jsonify({'results': comparison_results})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

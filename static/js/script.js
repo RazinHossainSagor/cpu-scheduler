@@ -1,6 +1,5 @@
 let processCount = 1;
 
-// Function to Add Process Row
 function addRow() {
     processCount++;
     const tableBody = document.querySelector("#processTable tbody");
@@ -16,7 +15,6 @@ function addRow() {
     tableBody.appendChild(row);
 }
 
-// Function to Remove Process Row
 function removeRow(btn) {
     const row = btn.parentElement.parentElement;
     const tbody = row.parentElement;
@@ -28,7 +26,6 @@ function removeRow(btn) {
     }
 }
 
-// Re-index process IDs after deletion
 function reindexProcesses() {
     const rows = document.querySelectorAll("#processTable tbody tr");
     processCount = rows.length;
@@ -37,7 +34,6 @@ function reindexProcesses() {
     });
 }
 
-// Switch between Module 1 and Module 2
 function switchModule(moduleNum) {
     const mod1 = document.getElementById("module1");
     const mod2 = document.getElementById("module2");
@@ -57,7 +53,6 @@ function switchModule(moduleNum) {
     }
 }
 
-// Helper function to extract input processes
 function getProcessData() {
     const rows = document.querySelectorAll("#processTable tbody tr");
     const processes = [];
@@ -79,27 +74,16 @@ function getProcessData() {
     return processes;
 }
 
-// Run Module 1 Simulation
 function runSimulation() {
     const processes = getProcessData();
     const algorithm = document.getElementById("algorithm").value;
 
     fetch("/simulate", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            algorithm: algorithm,
-            processes: processes
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ algorithm: algorithm, processes: processes })
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => { throw new Error(err.error || "Server Error"); });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.error) {
             alert(data.error);
@@ -107,11 +91,11 @@ function runSimulation() {
         }
 
         document.getElementById("results1").style.display = "block";
+        
+        const ganttContainer = document.getElementById("ganttChart");
+        const chartList = data.gantt || data.gantt_chart || [];
+        renderGanttChart(ganttContainer, chartList);
 
-        // Render Gantt Chart
-        renderGanttChart("ganttChart", data.gantt || []);
-
-        // Render Process Details Table
         const resultTableBody = document.querySelector("#resultTable tbody");
         resultTableBody.innerHTML = "";
 
@@ -129,7 +113,6 @@ function runSimulation() {
             resultTableBody.appendChild(tr);
         });
 
-        // Metrics Summary
         const avgWait = data.avg_waiting ?? data.avg_waiting_time ?? 0;
         const avgTat = data.avg_turnaround ?? data.avg_turnaround_time ?? 0;
         const totalIdle = data.total_idle ?? data.idle_time ?? 0;
@@ -140,44 +123,28 @@ function runSimulation() {
     })
     .catch(error => {
         console.error("Error running simulation:", error);
-        alert(error.message || "An error occurred while running the simulation.");
+        alert("Simulation Error!");
     });
 }
 
-// Run Module 2 Comparison
 function runComparison() {
     const processes = getProcessData();
-    const checkedBoxes = document.querySelectorAll(".checkbox-group input[type='checkbox']:checked");
+    const checkedBoxes = document.querySelectorAll("#module2 input[type='checkbox']:checked");
     const selectedAlgos = Array.from(checkedBoxes).map(cb => cb.value);
 
     if (selectedAlgos.length === 0) {
-        alert("Please select at least one algorithm to compare!");
+        alert("Please select at least one algorithm!");
         return;
     }
 
     fetch("/compare", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            algorithms: selectedAlgos,
-            processes: processes
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ algorithms: selectedAlgos, processes: processes })
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => { throw new Error(err.error || "Server Error"); });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        const resultsArray = data.results || (Array.isArray(data) ? data : []);
-
-        if (resultsArray.length === 0) {
-            alert("No results returned for comparison.");
-            return;
-        }
+        const resultsArray = Array.isArray(data) ? data : (data.results || []);
 
         document.getElementById("results2").style.display = "block";
 
@@ -188,26 +155,23 @@ function runComparison() {
         comparisonTableBody.innerHTML = "";
 
         resultsArray.forEach(res => {
-            // Title for Gantt
             const title = document.createElement("h3");
-            title.innerText = res.algorithm;
+            title.innerText = res.algorithm || "Algorithm";
             title.style.color = "#38bdf8";
             title.style.margin = "15px 0 8px 0";
             comparisonGanttDiv.appendChild(title);
 
-            // Container for Gantt Chart
-            const ganttContainer = document.createElement("div");
-            ganttContainer.className = "gantt-chart-container";
-            comparisonGanttDiv.appendChild(ganttContainer);
+            const ganttBox = document.createElement("div");
+            ganttBox.className = "gantt-chart-container";
+            comparisonGanttDiv.appendChild(ganttBox);
 
-            renderGanttChart(ganttContainer, res.gantt || []);
+            const chartList = res.gantt || res.gantt_chart || [];
+            renderGanttChart(ganttBox, chartList);
 
-            // Metrics calculation
             const avgWait = res.avg_waiting ?? res.avg_waiting_time ?? 0;
             const avgTat = res.avg_turnaround ?? res.avg_turnaround_time ?? 0;
             const totalIdle = res.total_idle ?? res.idle_time ?? 0;
 
-            // Table Row
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${res.algorithm}</td>
@@ -220,30 +184,32 @@ function runComparison() {
     })
     .catch(error => {
         console.error("Error running comparison:", error);
-        alert(error.message || "An error occurred while running the comparison.");
+        alert("Comparison Error!");
     });
 }
 
-// Function to render Gantt Chart HTML
-function renderGanttChart(containerOrId, ganttData) {
-    const container = typeof containerOrId === "string" ? document.getElementById(containerOrId) : containerOrId;
+function renderGanttChart(container, ganttData) {
     container.innerHTML = "";
 
-    if (!ganttData || ganttData.length === 0) return;
+    if (!ganttData || ganttData.length === 0) {
+        container.innerText = "No Gantt data available";
+        return;
+    }
 
     ganttData.forEach(item => {
         const block = document.createElement("div");
         block.className = "gantt-block";
-        const processName = item.process || item.id || item.process_id || "P";
-        const start = item.start ?? item.start_time ?? 0;
-        const end = item.end ?? item.end_time ?? 0;
+
+        const processName = item.process || item.id || item.process_id || item.name || "P";
+        const start = item.start !== undefined ? item.start : (item.start_time !== undefined ? item.start_time : 0);
+        const end = item.end !== undefined ? item.end : (item.end_time !== undefined ? item.end_time : 0);
 
         block.innerText = `${processName} (${start}-${end})`;
-        
-        if (processName === "Idle" || processName === "IDLE") {
-            block.style.backgroundColor = "#475569";
+
+        if (processName.toString().toLowerCase().includes("idle")) {
+            block.classList.add("idle");
         }
-        
+
         container.appendChild(block);
     });
 }
