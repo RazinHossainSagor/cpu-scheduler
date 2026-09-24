@@ -94,7 +94,12 @@ function runSimulation() {
             processes: processes
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || "Server Error"); });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.error) {
             alert(data.error);
@@ -104,33 +109,38 @@ function runSimulation() {
         document.getElementById("results1").style.display = "block";
 
         // Render Gantt Chart
-        renderGanttChart("ganttChart", data.gantt);
+        renderGanttChart("ganttChart", data.gantt || []);
 
         // Render Process Details Table
         const resultTableBody = document.querySelector("#resultTable tbody");
         resultTableBody.innerHTML = "";
 
-        data.processes.forEach(p => {
+        const procList = data.processes || [];
+        procList.forEach(p => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${p.id}</td>
-                <td>${p.arrival}</td>
-                <td>${p.burst}</td>
-                <td>${p.completion}</td>
-                <td>${p.turnaround}</td>
-                <td>${p.waiting}</td>
+                <td>${p.arrival_time ?? p.arrival ?? 0}</td>
+                <td>${p.burst_time ?? p.burst ?? 0}</td>
+                <td>${p.completion_time ?? p.completion ?? 0}</td>
+                <td>${p.turnaround_time ?? p.turnaround ?? 0}</td>
+                <td>${p.waiting_time ?? p.waiting ?? 0}</td>
             `;
             resultTableBody.appendChild(tr);
         });
 
         // Metrics Summary
-        document.getElementById("avgWaiting").innerText = data.avg_waiting.toFixed(2);
-        document.getElementById("avgTurnaround").innerText = data.avg_turnaround.toFixed(2);
-        document.getElementById("totalIdle").innerText = data.total_idle;
+        const avgWait = data.avg_waiting ?? data.avg_waiting_time ?? 0;
+        const avgTat = data.avg_turnaround ?? data.avg_turnaround_time ?? 0;
+        const totalIdle = data.total_idle ?? data.idle_time ?? 0;
+
+        document.getElementById("avgWaiting").innerText = Number(avgWait).toFixed(2);
+        document.getElementById("avgTurnaround").innerText = Number(avgTat).toFixed(2);
+        document.getElementById("totalIdle").innerText = totalIdle;
     })
     .catch(error => {
         console.error("Error running simulation:", error);
-        alert("An error occurred while running the simulation.");
+        alert(error.message || "An error occurred while running the simulation.");
     });
 }
 
@@ -155,23 +165,29 @@ function runComparison() {
             processes: processes
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || "Server Error"); });
+        }
+        return response.json();
+    })
     .then(data => {
-        if (data.error) {
-            alert(data.error);
+        const resultsArray = data.results || (Array.isArray(data) ? data : []);
+
+        if (resultsArray.length === 0) {
+            alert("No results returned for comparison.");
             return;
         }
 
         document.getElementById("results2").style.display = "block";
 
-        // Render Gantt Charts for each algorithm
         const comparisonGanttDiv = document.getElementById("comparisonGantt");
         comparisonGanttDiv.innerHTML = "";
 
         const comparisonTableBody = document.querySelector("#comparisonTable tbody");
         comparisonTableBody.innerHTML = "";
 
-        data.results.forEach(res => {
+        resultsArray.forEach(res => {
             // Title for Gantt
             const title = document.createElement("h3");
             title.innerText = res.algorithm;
@@ -184,22 +200,27 @@ function runComparison() {
             ganttContainer.className = "gantt-chart-container";
             comparisonGanttDiv.appendChild(ganttContainer);
 
-            renderGanttChart(ganttContainer, res.gantt);
+            renderGanttChart(ganttContainer, res.gantt || []);
+
+            // Metrics calculation
+            const avgWait = res.avg_waiting ?? res.avg_waiting_time ?? 0;
+            const avgTat = res.avg_turnaround ?? res.avg_turnaround_time ?? 0;
+            const totalIdle = res.total_idle ?? res.idle_time ?? 0;
 
             // Table Row
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${res.algorithm}</td>
-                <td>${res.avg_waiting.toFixed(2)}</td>
-                <td>${res.avg_turnaround.toFixed(2)}</td>
-                <td>${res.total_idle}</td>
+                <td>${Number(avgWait).toFixed(2)}</td>
+                <td>${Number(avgTat).toFixed(2)}</td>
+                <td>${totalIdle}</td>
             `;
             comparisonTableBody.appendChild(tr);
         });
     })
     .catch(error => {
         console.error("Error running comparison:", error);
-        alert("An error occurred while running the comparison.");
+        alert(error.message || "An error occurred while running the comparison.");
     });
 }
 
@@ -208,12 +229,18 @@ function renderGanttChart(containerOrId, ganttData) {
     const container = typeof containerOrId === "string" ? document.getElementById(containerOrId) : containerOrId;
     container.innerHTML = "";
 
+    if (!ganttData || ganttData.length === 0) return;
+
     ganttData.forEach(item => {
         const block = document.createElement("div");
         block.className = "gantt-block";
-        block.innerText = `${item.process} (${item.start}-${item.end})`;
+        const processName = item.process || item.id || item.process_id || "P";
+        const start = item.start ?? item.start_time ?? 0;
+        const end = item.end ?? item.end_time ?? 0;
+
+        block.innerText = `${processName} (${start}-${end})`;
         
-        if (item.process === "Idle") {
+        if (processName === "Idle" || processName === "IDLE") {
             block.style.backgroundColor = "#475569";
         }
         

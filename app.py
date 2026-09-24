@@ -10,7 +10,10 @@ def parse_processes(data):
             'id': str(p.get('id', '')),
             'arrival_time': int(p.get('arrival', p.get('arrival_time', 0))),
             'burst_time': int(p.get('burst', p.get('burst_time', 1))),
-            'priority': int(p.get('priority', 0))
+            'priority': int(p.get('priority', 0)),
+            # JS safety compatibility
+            'arrival': int(p.get('arrival', p.get('arrival_time', 0))),
+            'burst': int(p.get('burst', p.get('burst_time', 1)))
         })
     return processes
 
@@ -29,7 +32,6 @@ def simulate():
         raw_processes = req_data.get('processes', [])
         processes = parse_processes(raw_processes)
 
-        # scheduler.py-এর ফাংশন নামের সাথে মিলিয়ে নির্বাচন
         algo_map = {
             'FCFS': ['fcfs', 'first_come_first_serve', 'fcfs_scheduling'],
             'SJF': ['sjf', 'sjf_non_preemptive', 'shortest_job_first'],
@@ -104,7 +106,8 @@ def compare():
                     res['algorithm'] = algo
                     comparison_results.append(res)
 
-        return jsonify(comparison_results)
+        # Response wrapper added for script.js compatibility
+        return jsonify({'results': comparison_results})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
