@@ -1,4 +1,3 @@
-/* Dark Theme Base Styles */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -18,16 +17,13 @@ body {
     margin: 0 auto;
 }
 
-/* Header Title */
 .main-title {
     color: #3b82f6;
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 20px;
-    text-align: left;
 }
 
-/* Navigation Tabs */
 .nav-tabs {
     display: flex;
     gap: 10px;
@@ -54,18 +50,12 @@ body {
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
-.tab-btn:hover:not(.active) {
-    background-color: #334155;
-    color: #f8fafc;
-}
-
-/* Cards & Sections */
 .card {
     background-color: #111c38;
     border: 1px solid #1e293b;
     border-radius: 10px;
     padding: 24px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
@@ -75,7 +65,6 @@ body {
     margin-bottom: 18px;
 }
 
-/* Tables */
 .table-responsive {
     width: 100%;
     overflow-x: auto;
@@ -105,7 +94,6 @@ td {
     border-bottom: 1px solid #162447;
 }
 
-/* Form Inputs */
 input[type="number"] {
     background-color: #0b1329;
     border: 1px solid #334155;
@@ -115,11 +103,6 @@ input[type="number"] {
     width: 80px;
     text-align: center;
     font-size: 0.95rem;
-}
-
-input[type="number"]:focus {
-    outline: none;
-    border-color: #3b82f6;
 }
 
 select {
@@ -134,21 +117,6 @@ select {
     cursor: pointer;
 }
 
-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-}
-
-.algo-selection {
-    margin-top: 18px;
-}
-
-.algo-selection label {
-    font-size: 0.95rem;
-    color: #cbd5e1;
-}
-
-/* Buttons */
 .btn-add {
     background-color: #0284c7;
     color: #ffffff;
@@ -158,28 +126,22 @@ select:focus {
     font-weight: 600;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: background-color 0.2s;
-    margin-top: 10px;
 }
 
-.btn-add:hover {
-    background-color: #0369a1;
-}
-
-.btn-delete {
-    background-color: #ef4444;
-    color: #ffffff;
-    border: none;
+/* Ensure ALL Delete buttons stay Red */
+button.btn-delete, .btn-delete {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    border: none !important;
     padding: 6px 14px;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
     font-size: 0.85rem;
-    transition: background-color 0.2s;
 }
 
-.btn-delete:hover {
-    background-color: #dc2626;
+button.btn-delete:hover {
+    background-color: #dc2626 !important;
 }
 
 .btn-run {
@@ -193,14 +155,8 @@ select:focus {
     cursor: pointer;
     width: 100%;
     margin-bottom: 25px;
-    transition: background-color 0.2s;
 }
 
-.btn-run:hover {
-    background-color: #1d4ed8;
-}
-
-/* Checkbox group */
 .checkbox-group {
     display: flex;
     flex-wrap: wrap;
@@ -214,27 +170,8 @@ select:focus {
     gap: 6px;
     color: #e2e8f0;
     font-size: 0.95rem;
-    cursor: pointer;
 }
 
-.checkbox-group input[type="checkbox"] {
-    accent-color: #2563eb;
-    width: 16px;
-    height: 16px;
-}
-
-/* Results Section */
-.results-container {
-    margin-top: 20px;
-}
-
-.results-container h2 {
-    color: #ffffff;
-    font-size: 1.2rem;
-    margin: 20px 0 12px 0;
-}
-
-/* Gantt Chart Styling */
 .gantt-chart-container {
     display: flex;
     flex-wrap: wrap;
@@ -244,22 +181,8 @@ select:focus {
     border-radius: 8px;
     border: 1px solid #1e293b;
     margin-bottom: 20px;
-    min-height: 60px;
 }
 
-.gantt-block {
-    background-color: #3b82f6;
-    color: #ffffff;
-    padding: 12px 8px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 0.9rem;
-    border-radius: 4px;
-    min-width: 60px;
-    flex-grow: 1;
-}
-
-/* Metrics Summary */
 .summary-metrics {
     margin-top: 15px;
     font-size: 1rem;

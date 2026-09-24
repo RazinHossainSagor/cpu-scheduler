@@ -1,161 +1,54 @@
 let processCount = 1;
 
-function switchModule(moduleNum) {
-    document.getElementById('module1').style.display = moduleNum === 1 ? 'block' : 'none';
-    document.getElementById('module2').style.display = moduleNum === 2 ? 'block' : 'none';
-    document.getElementById('btnModule1').classList.toggle('active', moduleNum === 1);
-    document.getElementById('btnModule2').classList.toggle('active', moduleNum === 2);
-}
-
 function addRow() {
     processCount++;
-    const tableBody = document.querySelector('#processTable tbody');
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
+    const tableBody = document.querySelector("#processTable tbody");
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
         <td>P${processCount}</td>
         <td><input type="number" class="arrival" value="0" min="0"></td>
         <td><input type="number" class="burst" value="5" min="1"></td>
         <td><input type="number" class="priority" value="1" min="0"></td>
-        <td><button class="remove-btn" onclick="removeRow(this)">Delete</button></td>
+        <td><button class="btn-delete" onclick="removeRow(this)">Delete</button></td>
     `;
-    tableBody.appendChild(newRow);
+    tableBody.appendChild(row);
 }
 
 function removeRow(btn) {
-    const row = btn.parentNode.parentNode;
-    row.parentNode.removeChild(row);
-}
-
-function getProcessData() {
-    const rows = document.querySelectorAll('#processTable tbody tr');
-    const processes = [];
-    rows.forEach(row => {
-        const id = row.cells[0].innerText.trim();
-        const arrival = parseInt(row.querySelector('.arrival').value) || 0;
-        const burst = parseInt(row.querySelector('.burst').value) || 1;
-        const priority = parseInt(row.querySelector('.priority').value) || 0;
-        processes.push({ id, arrival, burst, priority });
-    });
-    return processes;
-}
-
-function runSimulation() {
-    const processes = getProcessData();
-    const algorithm = document.getElementById('algorithm').value;
-
-    fetch('/simulate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ algorithm, processes })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            alert('Error: ' + data.error);
-            return;
-        }
-
-        document.getElementById('results1').style.display = 'block';
-
-        const ganttChart = document.getElementById('ganttChart');
-        ganttChart.innerHTML = '';
-        const chartData = data.gantt_chart || data.gantt || [];
-        chartData.forEach(block => {
-            const div = document.createElement('div');
-            div.className = 'gantt-block';
-            div.innerText = `${block.id} (${block.start}-${block.end})`;
-            ganttChart.appendChild(div);
-        });
-
-        const tbody = document.querySelector('#resultTable tbody');
-        tbody.innerHTML = '';
-        const processData = data.processes || data.result_table || [];
-        processData.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${p.id}</td>
-                <td>${p.arrival_time ?? p.arrival ?? 0}</td>
-                <td>${p.burst_time ?? p.burst ?? 0}</td>
-                <td>${p.completion_time ?? p.ct ?? 0}</td>
-                <td>${p.turnaround_time ?? p.tat ?? 0}</td>
-                <td>${p.waiting_time ?? p.wt ?? 0}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        const avgWT = data.avg_waiting_time ?? data.avg_wt ?? 0;
-        const avgTAT = data.avg_turnaround_time ?? data.avg_tat ?? 0;
-        const totalIdle = data.total_idle_time ?? data.total_idle ?? 0;
-
-        document.getElementById('avgWaiting').innerText = Number(avgWT).toFixed(2);
-        document.getElementById('avgTurnaround').innerText = Number(avgTAT).toFixed(2);
-        document.getElementById('totalIdle').innerText = totalIdle;
-    })
-    .catch(err => {
-        console.error('Simulation error:', err);
-        alert('Server connection error.');
-    });
-}
-
-function runComparison() {
-    const processes = getProcessData();
-    const checkedBoxes = document.querySelectorAll('#module2 .checkbox-group input:checked');
-    const algorithms = Array.from(checkedBoxes).map(cb => cb.value);
-
-    if (algorithms.length === 0) {
-        alert('Please select at least one algorithm.');
-        return;
+    const row = btn.parentElement.parentElement;
+    const tbody = row.parentElement;
+    if (tbody.children.length > 1) {
+        row.remove();
+        reindexProcesses();
+    } else {
+        alert("At least one process is required!");
     }
+}
 
-    fetch('/compare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ algorithms, processes })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            alert('Error: ' + data.error);
-            return;
-        }
+function reindexProcesses() {
+    const rows = document.querySelectorAll("#processTable tbody tr");
+    processCount = rows.length;
+    rows.forEach((row, index) => {
+        row.children[0].innerText = `P${index + 1}`;
+    });
+}
 
-        document.getElementById('results2').style.display = 'block';
+function switchModule(moduleNum) {
+    const mod1 = document.getElementById("module1");
+    const mod2 = document.getElementById("module2");
+    const btn1 = document.getElementById("btnModule1");
+    const btn2 = document.getElementById("btnModule2");
 
-        const ganttContainer = document.getElementById('comparisonGantt');
-        ganttContainer.innerHTML = '';
-
-        const tbody = document.querySelector('#comparisonTable tbody');
-        tbody.innerHTML = '';
-
-        data.forEach(res => {
-            const algoHeader = document.createElement('h3');
-            algoHeader.innerText = res.algorithm;
-            ganttContainer.appendChild(algoHeader);
-
-            const ganttDiv = document.createElement('div');
-            ganttDiv.className = 'gantt-chart';
-            const chartData = res.gantt_chart || res.gantt || [];
-            chartData.forEach(block => {
-                const div = document.createElement('div');
-                div.className = 'gantt-block';
-                div.innerText = `${block.id} (${block.start}-${block.end})`;
-                ganttDiv.appendChild(div);
-            });
-            ganttContainer.appendChild(ganttDiv);
-
-            const avgWT = res.avg_waiting_time ?? res.avg_wt ?? 0;
-            const avgTAT = res.avg_turnaround_time ?? res.avg_tat ?? 0;
-            const totalIdle = res.total_idle_time ?? res.total_idle ?? 0;
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${res.algorithm}</td>
-                <td>${Number(avgWT).toFixed(2)}</td>
-                <td>${Number(avgTAT).toFixed(2)}</td>
-                <td>${totalIdle}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    })
-    .catch(err => console.error('Comparison error:', err));
+    if (moduleNum === 1) {
+        mod1.style.display = "block";
+        mod2.style.display = "none";
+        btn1.classList.add("active");
+        btn2.classList.remove("active");
+    } else {
+        mod1.style.display = "none";
+        mod2.style.display = "block";
+        btn2.classList.add("active");
+        btn1.classList.remove("active");
+    }
 }

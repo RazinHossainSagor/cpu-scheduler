@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CPU Scheduling Visualizer</title>
 
-    <!-- Browser Tab Favicon (Blue CPU Icon) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='4' width='16' height='16' rx='2' ry='2'/><rect x='9' y='9' width='6' height='6'/><line x1='9' y1='1' x2='9' y2='4'/><line x1='15' y1='1' x2='15' y2='4'/><line x1='9' y1='20' x2='9' y2='23'/><line x1='15' y1='20' x2='15' y2='23'/><line x1='20' y1='9' x2='23' y2='9'/><line x1='20' y1='15' x2='23' y2='15'/><line x1='1' y1='9' x2='4' y2='9'/><line x1='1' y1='15' x2='4' y2='15'/></svg>">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -15,13 +14,13 @@
     <div class="container">
         <h1 class="main-title">CPU Scheduling Visualizer</h1>
 
-        <!-- Module Navigation Buttons -->
+        <!-- Navigation Tabs -->
         <div class="nav-tabs">
             <button id="btnModule1" class="tab-btn active" onclick="switchModule(1)">Module 1: Visualization</button>
             <button id="btnModule2" class="tab-btn" onclick="switchModule(2)">Module 2: Comparative Analysis</button>
         </div>
 
-        <!-- Inputs Card Section -->
+        <!-- Shared Process Inputs Table -->
         <div class="card">
             <h2 class="card-title">Process Inputs</h2>
             <div class="table-responsive">
@@ -48,24 +47,26 @@
             </div>
 
             <button class="btn-add" onclick="addRow()">+ Add Process</button>
-
-            <div class="algo-selection">
-                <label for="algorithm">Select Algorithm:</label>
-                <select id="algorithm">
-                    <option value="FCFS">First Come First Serve (FCFS)</option>
-                    <option value="SJF">Shortest Job First (SJF Non-Preemptive)</option>
-                    <option value="SRTF">Shortest Remaining Time First (SRTF)</option>
-                    <option value="Priority">Priority (Non-Preemptive)</option>
-                    <option value="Priority_Preemptive">Priority (Preemptive)</option>
-                    <option value="RR">Round Robin (RR)</option>
-                    <option value="LJF">Longest Job First (LJF)</option>
-                    <option value="LRTF">Longest Remaining Time First (LRTF)</option>
-                </select>
-            </div>
         </div>
 
         <!-- Module 1 View -->
         <div id="module1">
+            <div class="card">
+                <div class="algo-selection">
+                    <label for="algorithm">Select Algorithm:</label>
+                    <select id="algorithm">
+                        <option value="FCFS">First Come First Serve (FCFS)</option>
+                        <option value="SJF">Shortest Job First (SJF Non-Preemptive)</option>
+                        <option value="SRTF">Shortest Remaining Time First (SRTF)</option>
+                        <option value="Priority">Priority (Non-Preemptive)</option>
+                        <option value="Priority_Preemptive">Priority (Preemptive)</option>
+                        <option value="RR">Round Robin (RR)</option>
+                        <option value="LJF">Longest Job First (LJF)</option>
+                        <option value="LRTF">Longest Remaining Time First (LRTF)</option>
+                    </select>
+                </div>
+            </div>
+
             <button class="btn-run" onclick="runSimulation()">Run Simulation</button>
 
             <div id="results1" class="results-container" style="display: none;">
