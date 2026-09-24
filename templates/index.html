@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CPU Scheduling Visualizer</title>
 
-    <!-- Browser Tab Favicon (Gemini style CPU Icon) -->
+    <!-- Browser Tab Favicon (Blue CPU Icon) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='4' width='16' height='16' rx='2' ry='2'/><rect x='9' y='9' width='6' height='6'/><line x1='9' y1='1' x2='9' y2='4'/><line x1='15' y1='1' x2='15' y2='4'/><line x1='9' y1='20' x2='9' y2='23'/><line x1='15' y1='20' x2='15' y2='23'/><line x1='20' y1='9' x2='23' y2='9'/><line x1='20' y1='15' x2='23' y2='15'/><line x1='1' y1='9' x2='4' y2='9'/><line x1='1' y1='15' x2='4' y2='15'/></svg>">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -13,42 +13,43 @@
 <body>
 
     <div class="container">
-        <!-- Header Title -->
-        <h1>CPU Scheduling Visualizer</h1>
+        <h1 class="main-title">CPU Scheduling Visualizer</h1>
 
-        <!-- Tab Navigation -->
-        <div class="tab-container">
+        <!-- Module Navigation Buttons -->
+        <div class="nav-tabs">
             <button id="btnModule1" class="tab-btn active" onclick="switchModule(1)">Module 1: Visualization</button>
             <button id="btnModule2" class="tab-btn" onclick="switchModule(2)">Module 2: Comparative Analysis</button>
         </div>
 
-        <!-- Input Table Card -->
+        <!-- Inputs Card Section -->
         <div class="card">
-            <h2>Process Inputs</h2>
-            <table id="processTable">
-                <thead>
-                    <tr>
-                        <th>Process ID</th>
-                        <th>Arrival Time</th>
-                        <th>Burst Time</th>
-                        <th>Priority (Lower = Higher)</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>P1</td>
-                        <td><input type="number" class="arrival" value="0" min="0"></td>
-                        <td><input type="number" class="burst" value="5" min="1"></td>
-                        <td><input type="number" class="priority" value="1" min="0"></td>
-                        <td><button class="remove-btn" onclick="removeRow(this)">Delete</button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="add-btn" onclick="addRow()">+ Add Process</button>
+            <h2 class="card-title">Process Inputs</h2>
+            <div class="table-responsive">
+                <table id="processTable">
+                    <thead>
+                        <tr>
+                            <th>PROCESS ID</th>
+                            <th>ARRIVAL TIME</th>
+                            <th>BURST TIME</th>
+                            <th>PRIORITY (LOWER = HIGHER)</th>
+                            <th>ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>P1</td>
+                            <td><input type="number" class="arrival" value="0" min="0"></td>
+                            <td><input type="number" class="burst" value="5" min="1"></td>
+                            <td><input type="number" class="priority" value="1" min="0"></td>
+                            <td><button class="btn-delete" onclick="removeRow(this)">Delete</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-            <!-- Algorithm Selection Box -->
-            <div class="algo-select-box">
+            <button class="btn-add" onclick="addRow()">+ Add Process</button>
+
+            <div class="algo-selection">
                 <label for="algorithm">Select Algorithm:</label>
                 <select id="algorithm">
                     <option value="FCFS">First Come First Serve (FCFS)</option>
@@ -65,30 +66,32 @@
 
         <!-- Module 1 View -->
         <div id="module1">
-            <button class="run-btn" onclick="runSimulation()">Run Simulation</button>
+            <button class="btn-run" onclick="runSimulation()">Run Simulation</button>
 
-            <div id="results1" style="display: none;">
-                <h3>Gantt Chart</h3>
-                <div id="ganttChart" class="gantt-chart"></div>
+            <div id="results1" class="results-container" style="display: none;">
+                <h2>Gantt Chart</h2>
+                <div id="ganttChart" class="gantt-chart-container"></div>
 
-                <h3>Process Details</h3>
-                <table id="resultTable">
-                    <thead>
-                        <tr>
-                            <th>Process ID</th>
-                            <th>Arrival Time</th>
-                            <th>Burst Time</th>
-                            <th>Completion Time</th>
-                            <th>Turnaround Time</th>
-                            <th>Waiting Time</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <h2>Process Details</h2>
+                <div class="table-responsive">
+                    <table id="resultTable">
+                        <thead>
+                            <tr>
+                                <th>PROCESS ID</th>
+                                <th>ARRIVAL TIME</th>
+                                <th>BURST TIME</th>
+                                <th>COMPLETION TIME</th>
+                                <th>TURNAROUND TIME</th>
+                                <th>WAITING TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
 
-                <div class="metrics">
-                    <p><strong>Average Waiting Time:</strong> <span id="avgWaiting">0</span></p>
-                    <p><strong>Average Turnaround Time:</strong> <span id="avgTurnaround">0</span></p>
+                <div class="summary-metrics">
+                    <p><strong>Average Waiting Time:</strong> <span id="avgWaiting">0.00</span></p>
+                    <p><strong>Average Turnaround Time:</strong> <span id="avgTurnaround">0.00</span></p>
                     <p><strong>Total Idle Time:</strong> <span id="totalIdle">0</span></p>
                 </div>
             </div>
@@ -97,7 +100,7 @@
         <!-- Module 2 View -->
         <div id="module2" style="display: none;">
             <div class="card">
-                <h3>Select Algorithms to Compare</h3>
+                <h2 class="card-title">Select Algorithms to Compare</h2>
                 <div class="checkbox-group">
                     <label><input type="checkbox" value="FCFS" checked> FCFS</label>
                     <label><input type="checkbox" value="SJF" checked> SJF</label>
@@ -109,24 +112,27 @@
                     <label><input type="checkbox" value="LRTF"> LRTF</label>
                 </div>
             </div>
-            <button class="run-btn" onclick="runComparison()">Run Comparison</button>
 
-            <div id="results2" style="display: none;">
-                <h3>Gantt Charts</h3>
+            <button class="btn-run" onclick="runComparison()">Run Comparison</button>
+
+            <div id="results2" class="results-container" style="display: none;">
+                <h2>Gantt Charts</h2>
                 <div id="comparisonGantt"></div>
 
-                <h3>Comparison Table</h3>
-                <table id="comparisonTable">
-                    <thead>
-                        <tr>
-                            <th>Algorithm</th>
-                            <th>Avg Waiting Time</th>
-                            <th>Avg Turnaround Time</th>
-                            <th>Total Idle Time</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <h2>Comparison Table</h2>
+                <div class="table-responsive">
+                    <table id="comparisonTable">
+                        <thead>
+                            <tr>
+                                <th>ALGORITHM</th>
+                                <th>AVG WAITING TIME</th>
+                                <th>AVG TURNAROUND TIME</th>
+                                <th>TOTAL IDLE TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
