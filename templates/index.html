@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CPU Scheduling Visualizer</title>
     <!-- Web Favicon Link -->
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -43,7 +43,7 @@
             </table>
             <button class="add-btn" onclick="addRow()">+ Add Process</button>
 
-            <!-- Algorithm Selection -->
+            <!-- Algorithm Selection (Module 1) -->
             <div class="algo-select-box">
                 <label for="algorithm">Select Algorithm:</label>
                 <select id="algorithm">
@@ -53,7 +53,8 @@
                     <option value="Priority">Priority (Non-Preemptive)</option>
                     <option value="Priority_Preemptive">Priority (Preemptive)</option>
                     <option value="RR">Round Robin (RR)</option>
-                    <option value="LJF">Longest Job First (LJF)</option>
+                    <option value="LJF">Longest Job First (LJF Non-Preemptive)</option>
+                    <option value="LRTF">Longest Remaining Time First (LRTF / LJF Preemptive)</option>
                 </select>
             </div>
         </div>
@@ -95,10 +96,13 @@
                 <h3>Select Algorithms to Compare</h3>
                 <div class="checkbox-group">
                     <label><input type="checkbox" value="FCFS" checked> FCFS</label>
-                    <label><input type="checkbox" value="SJF"> SJF</label>
-                    <label><input type="checkbox" value="SRTF"> SRTF</label>
-                    <label><input type="checkbox" value="Priority"> Priority</label>
-                    <label><input type="checkbox" value="RR"> Round Robin</label>
+                    <label><input type="checkbox" value="SJF" checked> SJF</label>
+                    <label><input type="checkbox" value="SRTF" checked> SRTF</label>
+                    <label><input type="checkbox" value="Priority"> Priority (Non-Preemptive)</label>
+                    <label><input type="checkbox" value="Priority_Preemptive"> Priority (Preemptive)</label>
+                    <label><input type="checkbox" value="RR" checked> Round Robin</label>
+                    <label><input type="checkbox" value="LJF"> LJF (Non-Preemptive)</label>
+                    <label><input type="checkbox" value="LRTF"> LRTF (Preemptive LJF)</label>
                 </div>
             </div>
             <button class="run-btn" onclick="runComparison()">Run Comparison</button>
